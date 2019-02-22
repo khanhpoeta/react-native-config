@@ -7,17 +7,18 @@ def getCurrentFlavor() {
     // match optional modules followed by the task
     // (?:.*:)* is a non-capturing group to skip any :foo:bar: if they exist
     // *[a-z]+([A-Za-z]+) will capture the flavor part of the task name onward (e.g., assembleRelease --> Release)
-    def pattern = Pattern.compile("(?:.*:)*[a-z]+([A-Z][A-Za-z]+)")
+    def pattern = Pattern.compile(":app:*[a-z]+([A-Z][A-Za-z]+)")
     def flavor = ""
 
     gradle.getStartParameter().getTaskNames().any { name ->
         Matcher matcher = pattern.matcher(name)
         if (matcher.find()) {
+            println("gradle: $name")
             flavor = matcher.group(1).toLowerCase()
             return true
         }
     }
-
+    println("flavor: $flavor")
     return flavor
 }
 
@@ -25,18 +26,23 @@ def loadDotEnv(flavor = getCurrentFlavor()) {
     def envFile = ".env"
 
     if (System.env['ENVFILE']) {
+        println("Reading env from 1: $envFile")
         envFile = System.env['ENVFILE']
     } else if (System.getProperty('ENVFILE')) {
+        println("Reading env from 2: $envFile")
         envFile = System.getProperty('ENVFILE')
     } else if (project.hasProperty("envConfigFiles")) {
+        println("Reading env from 3: $envFile")
         // use startsWith because sometimes the task is "generateDebugSources", so we want to match "debug"
         project.ext.envConfigFiles.any { pair ->
+
             if (flavor.startsWith(pair.key)) {
                 envFile = pair.value
                 return true
             }
         }
     } else if (project.hasProperty("defaultEnvFile")) {
+        println("Reading env from 4: $envFile")
         envFile = project.defaultEnvFile
     }
 
